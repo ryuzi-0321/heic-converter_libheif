@@ -1,0 +1,354 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.wrap{padding:1.5rem 0;max-width:720px;margin:0 auto;font-family:var(--font-sans)}
+.ad-banner{border:1px dashed var(--color-border-secondary);border-radius:var(--border-radius-md);padding:.875rem 1.25rem;text-align:center;font-size:13px;color:var(--color-text-tertiary);margin-bottom:1.5rem;background:var(--color-background-secondary)}
+.drop-zone{border:1.5px dashed var(--color-border-secondary);border-radius:var(--border-radius-lg);padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:1.25rem;background:var(--color-background-primary)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:#378ADD;background:#E6F1FB}
+.drop-zone input{display:none}
+.drop-icon{font-size:30px;margin-bottom:.75rem}
+.drop-title{font-size:15px;font-weight:500;color:var(--color-text-primary);margin-bottom:.25rem}
+.drop-sub{font-size:13px;color:var(--color-text-secondary)}
+.loader-row{display:none;align-items:center;gap:10px;padding:.75rem 1rem;background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-bottom:1rem;font-size:13px;color:var(--color-text-secondary)}
+.spinner{width:16px;height:16px;border:2px solid var(--color-border-secondary);border-top-color:#378ADD;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.controls{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:1.25rem;display:none}
+.ctrl-row{display:flex;align-items:center;gap:12px;margin-bottom:.75rem}
+.ctrl-row:last-child{margin-bottom:0}
+.ctrl-label{font-size:13px;color:var(--color-text-secondary);min-width:72px}
+.ctrl-row input[type=range]{flex:1}
+.ctrl-val{font-size:13px;font-weight:500;min-width:28px;text-align:right;color:var(--color-text-primary)}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font-size:12px;padding:4px 12px;border-radius:20px;cursor:pointer;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-secondary);transition:all .15s;user-select:none}
+.pill.active{background:#E6F1FB;color:#185FA5;border-color:#378ADD}
+.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem}
+@media(max-width:520px){.preview-grid{grid-template-columns:1fr}}
+.preview-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;display:none}
+.preview-card img{width:100%;display:block;max-height:200px;object-fit:contain;background:var(--color-background-secondary)}
+.preview-info{padding:.75rem 1rem;border-top:0.5px solid var(--color-border-tertiary)}
+.preview-label{font-size:11px;color:var(--color-text-tertiary);letter-spacing:.4px;margin-bottom:4px}
+.preview-name{font-size:13px;font-weight:500;color:var(--color-text-primary);word-break:break-all}
+.preview-meta{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+.badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:20px;margin-left:4px;vertical-align:middle}
+.badge-heic{background:#EEEDFE;color:#3C3489}
+.badge-jpg{background:#EAF3DE;color:#27500A}
+.badge-png{background:#E1F5EE;color:#085041}
+.badge-webp{background:#FAEEDA;color:#633806}
+.badge-save{background:#EAF3DE;color:#3B6D11;border:0.5px solid #97C459}
+.status{font-size:13px;color:var(--color-text-secondary);text-align:center;margin:.5rem 0;min-height:18px}
+.status.err{color:#A32D2D}
+.status.ok{color:#3B6D11}
+.btn{width:100%;padding:.75rem;border-radius:var(--border-radius-md);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;border:none;display:none}
+.btn-convert{background:#185FA5;color:#fff;margin-bottom:.5rem}
+.btn-convert:hover{background:#0C447C}
+.btn-convert:disabled{background:var(--color-background-secondary);color:var(--color-text-tertiary);cursor:not-allowed}
+.btn-dl{background:#E6F1FB;color:#185FA5;border:0.5px solid #378ADD}
+.btn-dl:hover{background:#B5D4F4}
+.wasm-status{font-size:12px;color:var(--color-text-tertiary);text-align:center;margin-bottom:.75rem}
+.wasm-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#EF9F27;margin-right:5px;vertical-align:middle}
+.wasm-dot.ready{background:#639922}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background-primary: #1a1a1a;
+    --color-background-secondary: #2d2d2d;
+    --color-text-primary: #f0f0f0;
+    --color-text-secondary: #ccc;
+    --color-border-secondary: #444;
+  }
+  .drop-zone { background: #252525; }
+  .pill { background: #333; color: #bbb; }
+}
+</style>
+
+<div class="wrap">
+  <div class="ad-banner">広告スペース（AdSense をここに貼る）</div>
+
+  <div class="wasm-status" id="wasmStatus">
+    <span class="wasm-dot" id="wasmDot"></span><span id="wasmLabel">libheif-wasm を読み込み中...</span>
+  </div>
+
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept=".heic,.HEIC,.jpg,.jpeg,.png,image/heic,image/jpeg,image/png">
+    <div class="drop-icon">&#128247;</div>
+    <div class="drop-title">画像をドロップ または タップして選択</div>
+    <div class="drop-sub">HEIC / JPEG / PNG — Chrome・Safari 対応</div>
+  </div>
+
+  <div class="loader-row" id="loaderRow">
+    <div class="spinner"></div>
+    <span id="loaderMsg">処理中...</span>
+  </div>
+
+  <div class="controls" id="controls">
+    <div class="ctrl-row">
+      <span class="ctrl-label">出力形式</span>
+      <div class="pills" id="fmtPills"></div>
+    </div>
+    <div class="ctrl-row" id="qualityRow">
+      <span class="ctrl-label">品質</span>
+      <input type="range" id="quality" min="10" max="95" step="1" value="80">
+      <span class="ctrl-val" id="qualityVal">80</span>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">リサイズ</span>
+      <div class="pills" id="resizePills">
+        <span class="pill active" data-w="0">原寸</span>
+        <span class="pill" data-w="1920">1920px</span>
+        <span class="pill" data-w="1280">1280px</span>
+        <span class="pill" data-w="800">800px</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-grid">
+    <div class="preview-card" id="cardBefore">
+      <img id="imgBefore" alt="元画像">
+      <div class="preview-info">
+        <div class="preview-label">変換前</div>
+        <div class="preview-name" id="nameBefore"></div>
+        <div class="preview-meta" id="metaBefore"></div>
+      </div>
+    </div>
+    <div class="preview-card" id="cardAfter">
+      <img id="imgAfter" alt="変換後">
+      <div class="preview-info">
+        <div class="preview-label">変換後</div>
+        <div class="preview-name" id="nameAfter"></div>
+        <div class="preview-meta" id="metaAfter"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status" id="status"></div>
+  <button class="btn btn-convert" id="btnConvert">変換する</button>
+  <button class="btn btn-dl" id="btnDl">ダウンロード</button>
+
+  <div class="ad-banner" style="margin-top:1.5rem">広告スペース（AdSense をここに貼る）</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/libheif-js@1.17.1/libheif-wasm/libheif.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let heifDecoder = null;
+let currentFile = null;
+let currentCanvas = null;
+let selectedFmt = 'jpeg';
+let selectedWidth = 0;
+let outputBlob = null;
+
+function fmt(b){
+  if(b<1024)return b+'B';
+  if(b<1048576)return Math.round(b/1024)+'KB';
+  return (b/1048576).toFixed(1)+'MB';
+}
+
+function setLoader(show, msg=''){
+  $('loaderRow').style.display = show ? 'flex' : 'none';
+  if(msg) $('loaderMsg').textContent = msg;
+}
+
+function setStatus(msg, type=''){
+  const el = $('status');
+  el.textContent = msg;
+  el.className = 'status' + (type ? ' '+type : '');
+}
+
+async function initLibheif(){
+  try{
+    if(typeof libheif === 'undefined'){
+      $('wasmLabel').textContent = 'CDN読み込み中... (初回のみ時間がかかります)';
+      await new Promise(r => setTimeout(r, 3000));
+    }
+    if(typeof libheif !== 'undefined'){
+      const lib = await libheif();
+      heifDecoder = new lib.HeifDecoder();
+      $('wasmDot').className = 'wasm-dot ready';
+      $('wasmLabel').textContent = 'libheif-wasm 準備完了（Chrome・Safari 対応）';
+    } else {
+      $('wasmLabel').textContent = 'libheif 読み込みに失敗。ページを再読み込みしてください。';
+    }
+  }catch(e){
+    $('wasmLabel').textContent = 'libheif 初期化エラー: '+e.message;
+  }
+}
+initLibheif();
+
+const fmtOptions = {
+  heic: [{v:'jpeg',l:'JPEG'},{v:'png',l:'PNG'},{v:'webp',l:'WebP'}],
+  jpeg: [{v:'jpeg',l:'JPEG（圧縮）'},{v:'png',l:'PNG'},{v:'webp',l:'WebP'}],
+  png:  [{v:'webp',l:'WebP'},{v:'jpeg',l:'JPEG'},{v:'png',l:'PNG（最適化）'}]
+};
+
+function buildFmtPills(fmt, def){
+  const container = $('fmtPills');
+  container.innerHTML = '';
+  selectedFmt = def;
+  fmt.forEach(f=>{
+    const p = document.createElement('span');
+    p.className = 'pill' + (f.v===def?' active':'');
+    p.textContent = f.l;
+    p.onclick = ()=>{
+      container.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
+      p.classList.add('active');
+      selectedFmt = f.v;
+      $('qualityRow').style.display = f.v==='png'?'none':'flex';
+    };
+    container.appendChild(p);
+  });
+  $('qualityRow').style.display = def==='png'?'none':'flex';
+}
+
+$('resizePills').querySelectorAll('.pill').forEach(p=>{
+  p.onclick=()=>{
+    $('resizePills').querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active');
+    selectedWidth = parseInt(p.dataset.w)||0;
+  };
+});
+
+$('quality').oninput = () => $('qualityVal').textContent = $('quality').value;
+
+const dropZone = $('dropZone');
+dropZone.onclick = () => $('fileInput').click();
+dropZone.ondragover = e=>{e.preventDefault();dropZone.classList.add('drag-over')};
+dropZone.ondragleave = ()=>dropZone.classList.remove('drag-over');
+dropZone.ondrop = e=>{e.preventDefault();dropZone.classList.remove('drag-over');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0])};
+$('fileInput').onchange = ()=>{if($('fileInput').files[0])loadFile($('fileInput').files[0])};
+
+async function loadFile(file){
+  currentFile = file;
+  outputBlob = null;
+  $('cardAfter').style.display = 'none';
+  $('btnDl').style.display = 'none';
+  setStatus('');
+
+  const ext = file.name.toLowerCase().split('.').pop();
+  const isHeic = ext==='heic';
+  const origFmt = isHeic ? 'heic' : (ext==='png'?'png':'jpeg');
+
+  if(isHeic){
+    setLoader(true,'HEICをデコード中（libheif-wasm）...');
+    try{
+      const buf = await file.arrayBuffer();
+      const data = new Uint8Array(buf);
+
+      if(!heifDecoder){
+        const lib = await libheif();
+        heifDecoder = new lib.HeifDecoder();
+      }
+
+      const decoded = heifDecoder.decode(data);
+      if(!decoded||!decoded.length) throw new Error('デコード結果が空です');
+      const img = decoded[0];
+      const w = img.get_width();
+      const h = img.get_height();
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx.createImageData(w, h);
+
+      await new Promise((res,rej)=>{
+        img.display(imageData, d=>{
+          if(!d){rej(new Error('display() 失敗'));return}
+          ctx.putImageData(d,0,0);
+          res();
+        });
+      });
+
+      currentCanvas = canvas;
+      const url = canvas.toDataURL('image/jpeg',0.7);
+      showBefore(url, file.name, file.size, 'heic', w+'×'+h);
+      buildFmtPills(fmtOptions.heic, 'jpeg');
+      $('controls').style.display = 'block';
+      $('btnConvert').style.display = 'block';
+      setStatus('HEIC デコード完了', 'ok');
+    }catch(e){
+      setStatus('HEICデコードエラー: '+e.message, 'err');
+    }finally{
+      setLoader(false);
+    }
+  } else {
+    const url = URL.createObjectURL(file);
+    const imgEl = new Image();
+    imgEl.onload = ()=>{
+      const canvas = document.createElement('canvas');
+      canvas.width = imgEl.naturalWidth;
+      canvas.height = imgEl.naturalHeight;
+      canvas.getContext('2d').drawImage(imgEl, 0, 0);
+      currentCanvas = canvas;
+      showBefore(url, file.name, file.size, origFmt, imgEl.naturalWidth+'×'+imgEl.naturalHeight);
+      const def = origFmt==='png'?'webp':'jpeg';
+      buildFmtPills(fmtOptions[origFmt]||fmtOptions.jpeg, def);
+      $('controls').style.display = 'block';
+      $('btnConvert').style.display = 'block';
+      setStatus('');
+    };
+    imgEl.src = url;
+  }
+}
+
+function showBefore(url, name, size, fmtKey, dims){
+  $('imgBefore').src = url;
+  const bdg = {'heic':'badge-heic','jpeg':'badge-jpg','jpg':'badge-jpg','png':'badge-png','webp':'badge-webp'};
+  $('nameBefore').innerHTML = name.length>28?name.slice(0,25)+'...':name;
+  $('nameBefore').innerHTML += ' <span class="badge '+(bdg[fmtKey]||'badge-jpg')+'">'+fmtKey.toUpperCase()+'</span>';
+  $('metaBefore').textContent = fmt(size) + (dims?' • '+dims:'');
+  $('cardBefore').style.display = 'block';
+}
+
+$('btnConvert').onclick = async()=>{
+  if(!currentCanvas){setStatus('先に画像を選択してください','err');return}
+  $('btnConvert').disabled = true;
+  $('btnDl').style.display = 'none';
+  $('cardAfter').style.display = 'none';
+  setLoader(true,'変換中...');
+  setStatus('');
+
+  try{
+    await new Promise(r=>setTimeout(r,30));
+    const canvas = document.createElement('canvas');
+    let w = currentCanvas.width, h = currentCanvas.height;
+    if(selectedWidth>0 && w>selectedWidth){
+      h = Math.round(h*(selectedWidth/w));
+      w = selectedWidth;
+    }
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(currentCanvas, 0, 0, w, h);
+
+    const mimeMap = {jpeg:'image/jpeg',png:'image/png',webp:'image/webp'};
+    const mime = mimeMap[selectedFmt]||'image/jpeg';
+    const q = selectedFmt==='png'?undefined:parseInt($('quality').value)/100;
+
+    const blob = await new Promise(res=>canvas.toBlob(res, mime, q));
+    if(!blob)throw new Error('Blob生成失敗');
+    outputBlob = blob;
+
+    const extMap = {jpeg:'jpg',png:'png',webp:'webp'};
+    const outName = (currentFile.name.replace(/\.[^.]+$/,'')||'converted')+'.'+extMap[selectedFmt];
+    const savings = Math.round((1-blob.size/currentFile.size)*100);
+    const bdg2 = {jpeg:'badge-jpg',png:'badge-png',webp:'badge-webp'};
+
+    $('imgAfter').src = URL.createObjectURL(blob);
+    $('nameAfter').innerHTML = outName+' <span class="badge '+(bdg2[selectedFmt]||'badge-jpg')+'">'+selectedFmt.toUpperCase()+'</span>';
+    $('metaAfter').innerHTML = fmt(blob.size)+(savings>0?' <span class="badge badge-save">-'+savings+'%</span>':'');
+    $('cardAfter').style.display = 'block';
+    $('btnDl').style.display = 'block';
+    $('btnDl').dataset.name = outName;
+    setStatus('変換完了！', 'ok');
+  }catch(e){
+    setStatus('変換エラー: '+e.message,'err');
+  }finally{
+    setLoader(false);
+    $('btnConvert').disabled = false;
+  }
+};
+
+$('btnDl').onclick = ()=>{
+  if(!outputBlob)return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(outputBlob);
+  a.download = $('btnDl').dataset.name||'converted';
+  a.click();
+};
+</script>
